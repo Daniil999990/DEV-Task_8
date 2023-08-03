@@ -1,0 +1,13 @@
+plugins {
+    id 'java'
+    id 'war'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.apache.tomcat:servlet-api:6.0.53'
+    providedCompile 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+}
