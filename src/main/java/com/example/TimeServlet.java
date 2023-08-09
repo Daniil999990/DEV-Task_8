@@ -60,8 +60,12 @@ public class TimeServlet extends HttpServlet {
             }
         } else {
             String encodedParameter = URLEncoder.encode(parameter, "UTF-8");
-            resp.addCookie(new Cookie("lastTimezone", encodedParameter));
-            date = getDate(parameter);
+            resp.addCookie(new Cookie("lastTimezone", parameter));
+            if (lastTimezone != null) {
+                date = getDate(parameter);
+            } else {
+                date = getDate("UTC");
+            }
         }
 
 
@@ -70,7 +74,13 @@ public class TimeServlet extends HttpServlet {
     }
 
     public String getDate(String param) {
-        ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of(param));
+        ZonedDateTime actualDateTime;
+        if (param == null) {
+            actualDateTime = ZonedDateTime.now(ZoneId.of("UTC"));
+        } else {
+            actualDateTime = ZonedDateTime.now(ZoneId.of(param));
+        }
+
         DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss z");
         return dateFormat.format(actualDateTime);
     }
