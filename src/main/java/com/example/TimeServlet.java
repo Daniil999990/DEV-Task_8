@@ -18,6 +18,8 @@ import java.util.Map;
 
 @WebServlet("/time")
 public class TimeServlet extends HttpServlet {
+    private static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss z");
+
     private transient TemplateEngine engine;
 
     @Override
@@ -42,14 +44,21 @@ public class TimeServlet extends HttpServlet {
         String displayText = "";
 
         if (timezoneParam == null) {
-            date = getDate("UTC");
-            displayText = "UTC";
+            if (lastTimezone != null) {
+                date = getDate(lastTimezone);
+                displayText = lastTimezone;
+            } else {
+                date = getDate("UTC");
+                displayText = "UTC";
+            }
         } else if ("UTC+2".equals(timezoneParam)) {
-            date = getDate("UTC+2");
-            displayText = "UTC+2";
+            ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of("UTC+2")).withZoneSameInstant(ZoneId.of("UTC"));
+            date = dateFormat.format(actualDateTime);
+            displayText = timezoneParam;
             resp.addCookie(new Cookie("lastTimezone", timezoneParam));
         } else if (lastTimezone != null) {
-            date = getDate(lastTimezone);
+            ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of("UTC+2")).withZoneSameInstant(ZoneId.of(lastTimezone));
+            date = dateFormat.format(actualDateTime);
             displayText = lastTimezone;
         } else {
             date = getDate("UTC");
@@ -69,16 +78,6 @@ public class TimeServlet extends HttpServlet {
     }
 
     public String getDate(String param) {
-        ZonedDateTime actualDateTime;
-        if ("UTC+2".equals(param)) {
-            actualDateTime = ZonedDateTime.now(ZoneId.of("UTC")).plusHours(2);
-        } else if (param == null) {
-            actualDateTime = ZonedDateTime.now(ZoneId.of("UTC"));
-        } else {
-            actualDateTime = ZonedDateTime.now(ZoneId.of(param));
-        }
-
-        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss z");
-        return dateFormat.format(actualDateTime);
+        return dateFormat.format(ZonedDateTime.now(ZoneId.of(param)).withZoneSameInstant(ZoneId.of("UTC+2")));
     }
 }
