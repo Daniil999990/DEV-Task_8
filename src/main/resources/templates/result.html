@@ -1,14 +1,16 @@
-<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>Time Display</title>
 </head>
 <body>
-<h1>
-    <span th:text="${date != null ? 'Last data: ' + date : 'Current data: ' + currentDate}"></span>
-</h1>
+<h1 th:if="${displayText == 'UTC'}">Time Display</h1>
+<h1 th:if="${displayText == 'UTC+2'}">Current Time</h1>
+<p th:text="${date}"></p>
+
+<div th:if="${displayText == 'UTC+2'}">
+    <p>UTC+2</p>
+</div>
 </body>
 </html>
