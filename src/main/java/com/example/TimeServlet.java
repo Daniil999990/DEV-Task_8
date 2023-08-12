@@ -52,12 +52,12 @@ public class TimeServlet extends HttpServlet {
                 displayText = "UTC";
             }
         } else if ("UTC+2".equals(timezoneParam)) {
-            ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of("UTC+2")).withZoneSameInstant(ZoneId.of("UTC"));
+            ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of(timezoneParam)).withZoneSameInstant(ZoneId.of("UTC"));
             date = dateFormat.format(actualDateTime);
             displayText = timezoneParam;
             resp.addCookie(new Cookie("lastTimezone", timezoneParam));
         } else if (lastTimezone != null) {
-            ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of("UTC+2")).withZoneSameInstant(ZoneId.of(lastTimezone));
+            ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of(lastTimezone)).withZoneSameInstant(ZoneId.of("UTC"));
             date = dateFormat.format(actualDateTime);
             displayText = lastTimezone;
         } else {
@@ -78,6 +78,6 @@ public class TimeServlet extends HttpServlet {
     }
 
     public String getDate(String param) {
-        return dateFormat.format(ZonedDateTime.now(ZoneId.of(param)).withZoneSameInstant(ZoneId.of("UTC+2")));
+        return dateFormat.format(ZonedDateTime.now(ZoneId.of(param)).withZoneSameInstant(ZoneId.of("UTC")));
     }
 }

@@ -1,16 +1,23 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Time Display</title>
+    <title>Time Servlet</title>
 </head>
 <body>
-<h1 th:if="${displayText == 'UTC'}">Time Display</h1>
-<h1 th:if="${displayText == 'UTC+2'}">Current Time</h1>
-<p th:text="${date}"></p>
-
-<div th:if="${displayText == 'UTC+2'}">
-    <p>UTC+2</p>
-</div>
+<h1>Current Time</h1>
+<p>The current time is: <span id="time"></span></p>
+<form action="time" method="get">
+    <input type="submit" value="Refresh">
+    <input type="hidden" name="timezone" value="UTC">
+</form>
+<script>
+        function getTime() {
+            const timezone = document.querySelector('input[name="timezone"]').value;
+            const time = new Date().toLocaleString(timezone);
+            document.getElementById('time').innerHTML = time;
+        }
+        getTime();
+    </script>
 </body>
 </html>
