@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
 
 import java.io.IOException;
@@ -14,7 +15,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Map;
 
 @WebServlet("/time")
 public class TimeServlet extends HttpServlet {
@@ -26,9 +26,9 @@ public class TimeServlet extends HttpServlet {
     public void init() {
         engine = new TemplateEngine();
         FileTemplateResolver resolver = new FileTemplateResolver();
-        resolver.setPrefix(getClass().getClassLoader().getResource("templates").getPath());
+        resolver.setPrefix(Thread.currentThread().getContextClassLoader().getResource("templates/").getPath());
         resolver.setSuffix(".html");
-        resolver.setTemplateMode("HTML5");
+        resolver.setTemplateMode(TemplateMode.HTML);
         resolver.setOrder(engine.getTemplateResolvers().size());
         resolver.setCacheable(false);
         engine.addTemplateResolver(resolver);
@@ -40,36 +40,44 @@ public class TimeServlet extends HttpServlet {
 
         String lastTimezone = getLastTimezoneCookieValue(req.getCookies());
 
-        String date = "";
-        String displayText = "";
+        String date;
+        String displayText;
 
-        if (timezoneParam == null) {
-            if (lastTimezone != null) {
-                date = getDate(lastTimezone);
-                displayText = lastTimezone;
+        try {
+            if (timezoneParam == null) {
+                if (lastTimezone != null && isValidTimezone(lastTimezone)) {
+                    date = getDate(lastTimezone);
+                    displayText = lastTimezone;
+                } else {
+                    date = getDate("UTC");
+                    displayText = "UTC";
+                }
+            } else if (isValidTimezone(timezoneParam)) {
+                date = getDate(timezoneParam);
+                displayText = timezoneParam;
+                resp.addCookie(new Cookie("lastTimezone", timezoneParam));
             } else {
                 date = getDate("UTC");
                 displayText = "UTC";
             }
-        } else if ("UTC+2".equals(timezoneParam)) {
-            ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of(timezoneParam)).withZoneSameInstant(ZoneId.of("UTC"));
-            date = dateFormat.format(actualDateTime);
-            displayText = timezoneParam;
-            resp.addCookie(new Cookie("lastTimezone", timezoneParam));
-        } else if (lastTimezone != null) {
-            ZonedDateTime actualDateTime = ZonedDateTime.now(ZoneId.of(lastTimezone)).withZoneSameInstant(ZoneId.of("UTC"));
-            date = dateFormat.format(actualDateTime);
-            displayText = lastTimezone;
-        } else {
+        } catch (Exception e) {
             date = getDate("UTC");
             displayText = "UTC";
         }
 
-        Context context = new Context(req.getLocale(), Map.of("date", date, "displayText", displayText));
-        engine.process("result", context, resp.getWriter());
+        Context context = new Context(req.getLocale());
+        context.setVariable("date", date);
+        context.setVariable("displayText", displayText);
+
+        String templatePath = "result"; // Шлях до шаблону в ресурсах
+        engine.process(templatePath, context, resp.getWriter());
     }
 
     private String getLastTimezoneCookieValue(Cookie[] cookies) {
+        if (cookies == null) {
+            return null;
+        }
+
         return Arrays.stream(cookies)
                 .filter(cookie -> "lastTimezone".equals(cookie.getName()))
                 .map(Cookie::getValue)
@@ -78,6 +86,23 @@ public class TimeServlet extends HttpServlet {
     }
 
     public String getDate(String param) {
-        return dateFormat.format(ZonedDateTime.now(ZoneId.of(param)).withZoneSameInstant(ZoneId.of("UTC")));
+        try {
+            if (isValidTimezone(param)) {
+                return dateFormat.format(ZonedDateTime.now(ZoneId.of(param)).withZoneSameInstant(ZoneId.of("UTC")));
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private boolean isValidTimezone(String timezone) {
+        try {
+            ZoneId.of(timezone);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
