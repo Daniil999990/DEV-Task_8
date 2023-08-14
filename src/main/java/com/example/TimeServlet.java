@@ -69,7 +69,7 @@ public class TimeServlet extends HttpServlet {
         context.setVariable("date", date);
         context.setVariable("displayText", displayText);
 
-        String templatePath = "result"; // Шлях до шаблону в ресурсах
+        String templatePath = "result";
         engine.process(templatePath, context, resp.getWriter());
     }
 
