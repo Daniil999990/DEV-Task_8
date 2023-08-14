@@ -1,23 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
-    <title>Time Servlet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Time Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            color: #333;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
-<h1>Current Time</h1>
-<p>The current time is: <span id="time"></span></p>
-<form action="time" method="get">
-    <input type="submit" value="Refresh">
-    <input type="hidden" name="timezone" value="UTC">
-</form>
-<script>
-        function getTime() {
-            const timezone = document.querySelector('input[name="timezone"]').value;
-            const time = new Date().toLocaleString(timezone);
-            document.getElementById('time').innerHTML = time;
-        }
-        getTime();
-    </script>
+<h1>
+    <span th:text="${date != null ? 'Last data: ' + date : 'Current data: ' + currentDate}"></span>
+</h1>
 </body>
 </html>

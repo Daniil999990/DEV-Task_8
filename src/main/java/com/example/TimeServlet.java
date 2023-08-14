@@ -1,5 +1,6 @@
 package com.example;
 
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
@@ -7,102 +8,75 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
 
 import java.io.IOException;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Map;
+import java.util.Objects;
 
 @WebServlet("/time")
 public class TimeServlet extends HttpServlet {
-    private static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss z");
-
     private transient TemplateEngine engine;
 
     @Override
-    public void init() {
+    public void init(ServletConfig config) {
         engine = new TemplateEngine();
         FileTemplateResolver resolver = new FileTemplateResolver();
-        resolver.setPrefix(Thread.currentThread().getContextClassLoader().getResource("templates/").getPath());
+        resolver.setPrefix(Objects.requireNonNull(getClass().getClassLoader().getResource("templates")).getPath());
         resolver.setSuffix(".html");
-        resolver.setTemplateMode(TemplateMode.HTML);
+        resolver.setTemplateMode("HTML5");
         resolver.setOrder(engine.getTemplateResolvers().size());
         resolver.setCacheable(false);
         engine.addTemplateResolver(resolver);
     }
 
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String date = "";
+        String currentDate = "";
+        String timezone = "timezone";
         resp.setContentType("text/html");
-        String timezoneParam = req.getParameter("timezone");
+        String parameter = req.getParameter(timezone);
 
-        String lastTimezone = getLastTimezoneCookieValue(req.getCookies());
-
-        String date;
-        String displayText;
-
-        try {
-            if (timezoneParam == null) {
-                if (lastTimezone != null && isValidTimezone(lastTimezone)) {
-                    date = getDate(lastTimezone);
-                    displayText = lastTimezone;
-                } else {
-                    date = getDate("UTC");
-                    displayText = "UTC";
-                }
-            } else if (isValidTimezone(timezoneParam)) {
-                date = getDate(timezoneParam);
-                displayText = timezoneParam;
-                resp.addCookie(new Cookie("lastTimezone", timezoneParam));
+        if (parameter == null || parameter.isEmpty()) {
+            Cookie[] cookies = req.getCookies();
+            if (cookies != null && cookies.length > 0) {
+                date = getString(date, cookies);
             } else {
-                date = getDate("UTC");
-                displayText = "UTC";
+                currentDate = getDate("UTC");
             }
-        } catch (Exception e) {
-            date = getDate("UTC");
-            displayText = "UTC";
+        } else {
+            resp.addCookie(new Cookie("Date", parameter));
+            currentDate = getDate(parameter);
         }
 
-        Context context = new Context(req.getLocale());
-        context.setVariable("date", date);
-        context.setVariable("displayText", displayText);
+        Context last = new Context(req.getLocale(), Map.of("date", date));
+        Context current = new Context(req.getLocale(), Map.of("currentDate", currentDate));
 
-        String templatePath = "result";
-        engine.process(templatePath, context, resp.getWriter());
+        engine.process("result", date.isEmpty() ? current : last, resp.getWriter());
+        resp.getWriter().close();
     }
 
-    private String getLastTimezoneCookieValue(Cookie[] cookies) {
-        if (cookies == null) {
-            return null;
-        }
-
-        return Arrays.stream(cookies)
-                .filter(cookie -> "lastTimezone".equals(cookie.getName()))
-                .map(Cookie::getValue)
+    private String getString(String date, Cookie[] cookies) {
+        String cookie = Arrays.stream(cookies)
                 .findFirst()
-                .orElse(null);
+                .map(Cookie::getValue)
+                .orElse("");
+
+        if (!cookie.isEmpty()) {
+            date = getDate(cookie);
+        }
+        return date;
     }
 
     public String getDate(String param) {
-        try {
-            if (isValidTimezone(param)) {
-                return dateFormat.format(ZonedDateTime.now(ZoneId.of(param)).withZoneSameInstant(ZoneId.of("UTC")));
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private boolean isValidTimezone(String timezone) {
-        try {
-            ZoneId.of(timezone);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        Date actualDate = new Date();
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss z")
+                .withZone(ZoneId.of(param));
+        return dateFormat.format(actualDate.toInstant());
     }
 }
